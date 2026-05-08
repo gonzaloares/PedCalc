@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Turnos Pediatría 2026</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #005f73;
+            --secondary: #0a9396;
+            --border: #ced4da;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+
+        .month-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 25px; background: var(--primary); padding: 10px; border-radius: 8px; }
+        .month-btn { padding: 8px 14px; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .month-btn.active { background: white; color: var(--primary); }
+
+        .main-tabs { display: flex; gap: 5px; border-bottom: 3px solid var(--primary); margin-bottom: 20px; }
+        .tab-btn { padding: 12px 20px; border: none; background: #dee2e6; cursor: pointer; font-weight: bold; border-radius: 8px 8px 0 0; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .content { display: none; }
+        .content.active { display: block; }
+
+        .table-wrapper { overflow-x: auto; max-height: 600px; border: 1px solid var(--border); margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; font-size: 11px; }
+        th, td { border: 1px solid var(--border); padding: 4px; text-align: center; min-width: 45px; }
+        
+        thead th { position: sticky; top: 0; background: var(--primary); color: white; z-index: 10; }
+        th:first-child, td:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 11; min-width: 200px; text-align: left; }
+        
+        th.weekend { background-color: #d64045 !important; color: white !important; font-size: 13px; border-color: #b9373b; }
+        td.weekend { background-color: #fae8e8 !important; }
+        
+        .shift-select { width: 100%; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 3px; border: 1px solid #ccc; }
+        .t1 { background-color: #e3f2fd; margin-bottom: 2px; }
+        .t2 { background-color: #f1f8e9; }
+
+        .cob-header { background: #343a40 !important; color: white; text-align: left !important; font-weight: bold; }
+        .cob-ok { background: #d4edda !important; color: #155724; font-weight: bold; }
+        .cob-falta { background: #f8d7da !important; color: #721c24; font-weight: bold; }
+        .cob-zero { background: #f8f9fa !important; color: #adb5bd; }
+
+        .recuento-section { margin-top: 30px; }
+        .recuento-title { background: var(--secondary); color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        
+        .doble-header th { top: 26px; z-index: 9; }
+        .grupo-lj { background-color: #e2e3e5 !important; color: #383d41 !important; }
+        .grupo-v { background-color: #d1ecf1 !important; color: #0c5460 !important; }
+        .grupo-s { background-color: #fff3cd !important; color: #856404 !important; }
+        .grupo-d { background-color: #f8d7da !important; color: #721c24 !important; }
+        .grupo-tot { background-color: #d4edda !important; color: #155724 !important; }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .botones-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn-toolbar { color: white; border: none; padding: 10px 15px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-toolbar:hover { transform: translateY(-1px); }
+        
+        .btn-guardias { background-color: #6f42c1; }
+        .btn-patrones { background-color: #2a9d8f; }
+        .btn-excel { background-color: #198754; }
+        .btn-import { background-color: #f4a261; color: #264653; }
+        
+        .danger-zone { text-align: center; margin-top: 20px; }
+        .btn-reset { background-color: #dc3545; color: white; border: none; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        
+        #input-excel { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏥 Gestión Pediatría 2026</h1>
+
+    <div class="month-nav" id="month-nav"></div>
+
+    <div class="main-tabs">
+        <button class="tab-btn active" onclick="showTab('limites')">1. Límites</button>
+        <button class="tab-btn" onclick="showTab('cuadrante')">2. Cuadrante</button>
+        <button class="tab-btn" onclick="showTab('recuento')">3. Recuentos y Estadísticas</button>
+    </div>
+
+    <div id="limites" class="content active">
+        <h3 id="h3-limites"></h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Pediatra</th><th>GN Mín/Máx</th><th>GP Mín/Máx</th><th>R Mín/Máx</th><th>Total Mín/Máx</th></tr>
+                </thead>
+                <tbody id="lista-limites"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="cuadrante" class="content">
+        <div class="toolbar">
+            <div style="font-size: 11px; color: #555; max-width: 300px;">
+                <strong>Ayuda:</strong> Pon <strong>EX</strong> para bloquear guardias de un médico.
+            </div>
+            <div class="botones-toolbar">
+                <input type="file" id="input-excel" accept=".xlsx, .xls" onchange="procesarExcelBloqueos(event)">
+                <button class="btn-toolbar btn-import" onclick="document.getElementById('input-excel').click()">📂 Importar Bloqueos (Excel)</button>
+                <button class="btn-toolbar btn-guardias" onclick="autocompletarGuardias()">🛡️ Autocompletar Guardias</button>
+                <button class="btn-toolbar btn-patrones" onclick="autocompletarPatrones()">✨ Autocompletar Patrones</button>
+                <button class="btn-toolbar btn-excel" onclick="exportarExcel()">📊 Exportar a Excel</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table id="table-cuadrante">
+                <thead id="head-cuadrante"></thead>
+                <tbody id="body-cuadrante"></tbody>
+                <tbody id="body-cobertura"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="recuento" class="content">
+        <div class="recuento-section">
+            <h3 class="recuento-title" id="h3-recuento-mensual">Recuento Mensual de Turnos</h3>
+            <div class="table-wrapper">
+                <table id="table-recuento-mensual"></table>
+            </div>
+        </div>
+        <div class="recuento-section">
+            <h3 class="recuento-title">Desglose Guardias (G) y Refuerzos Fin de Semana (R)</h3>
+            <div class="table-wrapper">
+                <table id="table-especial-finde"></table>
+            </div>
+        </div>
+        <div class="recuento-section">
+            <h3 class="recuento-title">Resumen Anual Acumulado</h3>
+            <div class="table-wrapper">
+                <table id="table-anual"></table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="danger-zone">
+        <button class="btn-reset" onclick="reiniciarApp()">Borrar Memoria</button>
+    </div>
+</div>
+
+<script>
+    var nombres = ["BEATRIZ VILLAFUERTE QUISPE", "BLANCA DE PAZOS AZPEITIA", "CARLOS RICARDO TORRES ZEGARRA", "CECILIA PAREDES MERCADO", "CRISTINA ARIAS LOZANO", "DIANA VELILLA ANTOLIN", "ELENA ALONSO VILLAN", "ERIKA JIMENEZ GONZALEZ", "ERIKA PULIDO OVALLE", "GEMA SABRIDO BERMUDEZ", "GONZALO ARES MATEOS", "IRENE HURTADO MUÑOZ", "IVETTE CARIME RUIZ ABADIA", "JENNY MARCELA GOMEZ SALAZAR", "KARY LEONISA QUIÑONES CONEO", "KELLY JENNIFER ESCAJADILLO VARGAS", "LAURA FRAILE GARCIA", "LUCIA GOMEZ LOPEZ", "MARIA ELENA FRIAS GARCIA", "MARIA FERNANDEZ CAMUÑAS", "MARIA GARCIA MONTERO", "MICHAELA PROCHAZKOVA", "MIGUEL RICO PAJARES", "OLGA CARVAJAL DEL CASTILLO", "PABLO BELLO GUTIERREZ", "PATRICIA DEL OLMO SEGURA"].sort();
+    var meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    var opcionesT1 = ["", "U", "N", "P", "C", "HD", "S", "L"];
+    var opcionesT2 = ["", "UT", "GN", "GP", "R", "CT", "CTC", "S", "L", "EX"]; 
+    var turnosCobertura = ["U", "P", "N", "UT", "GN", "GP", "R", "HD"];
+    var festivos = ["0-1", "0-6", "3-2", "3-3", "4-1", "4-2", "6-25", "7-15", "9-12", "10-1", "10-9", "11-6", "11-8", "11-25"];
+    var allowedGN = ["GONZALO ARES MATEOS", "BLANCA DE PAZOS AZPEITIA", "CECILIA PAREDES MERCADO", "ERIKA JIMENEZ GONZALEZ", "ERIKA PULIDO OVALLE", "GEMA SABRIDO BERMUDEZ", "IRENE HURTADO MUÑOZ", "IVETTE CARIME RUIZ ABADIA", "LAURA FRAILE GARCIA", "MARIA ELENA FRIAS GARCIA", "MARIA GARCIA MONTERO", "MIGUEL RICO PAJARES", "PATRICIA DEL OLMO SEGURA"];
+
+    var mesActual = 0, dataTurnos = {}, dataLimites = {};
+
+    try {
+        if (localStorage.getItem('pediatriaData2026')) dataTurnos = JSON.parse(localStorage.getItem('pediatriaData2026'));
+        if (localStorage.getItem('pediatriaLimites2026')) dataLimites = JSON.parse(localStorage.getItem('pediatriaLimites2026'));
+    } catch (e) {}
+
+    function reiniciarApp() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+    function init() { renderMonthNav(); renderActiveTab(); }
+
+    function showTab(id) {
+        var contents = document.getElementsByClassName('content');
+        for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+        var btns = document.getElementsByClassName('tab-btn');
+        for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        renderActiveTab();
+    }
+
+    function renderMonthNav() {
+        var nav = document.getElementById('month-nav'); nav.innerHTML = '';
+        for (var i = 0; i < meses.length; i++) {
+            var btn = document.createElement('button');
+            btn.className = 'month-btn ' + (i === mesActual ? 'active' : '');
+            btn.innerText = meses[i];
+            btn.setAttribute('data-index', i);
+            btn.onclick = function() { mesActual = parseInt(this.getAttribute('data-index')); renderMonthNav(); renderActiveTab(); };
+            nav.appendChild(btn);
+        }
+    }
+
+    function renderActiveTab() {
+        if(document.getElementById('limites').classList.contains('active')) renderLimites();
+        if(document.getElementById('cuadrante').classList.contains('active')) renderCuadrante();
+        if(document.getElementById('recuento').classList.contains('active')) renderRecuentos();
+    }
+
+    function renderLimites() {
+        document.getElementById('h3-limites').innerText = 'Límites - ' + meses[mesActual];
+        var body = document.getElementById('lista-limites'); body.innerHTML = "";
+        for (var i = 0; i < nombres.length; i++) {
+            var p = nombres[i];
+            if(!dataLimites[mesActual]) dataLimites[mesActual] = {};
+            if(!dataLimites[mesActual][p]) dataLimites[mesActual][p] = { minGN:0, maxGN:5, minGP:0, maxGP:5, minR:0, maxR:5, minT:0, maxT:5 };
+            var l = dataLimites[mesActual][p];
+            body.innerHTML += '<tr><td>' + p + '</td>' +
+                '<td><input type="number" value="'+l.minGN+'" onchange="updateLim(\''+p+'\',\'minGN\',this.value)" style="width:40px;"> / <input type="number" value="'+l.maxGN+'" onchange="updateLim(\''+p+'\',\'maxGN\',this.value)" style="width:40px;"></td>' +
+                '<td><input type="number" value="'+l.minGP+'" onchange="updateLim(\''+p+'\',\'minGP\',this.value)" style="width:40px;"> / <input type="number" value="'+l.maxGP+'" onchange="updateLim(\''+p+'\',\'maxGP\',this.value)" style="width:40px;"></td>' +
+                '<td><input type="number" value="'+l.minR+'" onchange="updateLim(\''+p+'\',\'minR\',this.value)" style="width:40px;"> / <input type="number" value="'+l.maxR+'" onchange="updateLim(\''+p+'\',\'maxR\',this.value)" style="width:40px;"></td>' +
+                '<td><input type="number" value="'+l.minT+'" onchange="updateLim(\''+p+'\',\'minT\',this.value)" style="width:40px;"> / <input type="number" value="'+l.maxT+'" onchange="updateLim(\''+p+'\',\'maxT\',this.value)" style="width:40px;"></td></tr>';
+        }
+    }
+    function updateLim(p, k, v) { dataLimites[mesActual][p][k] = parseInt(v) || 0; localStorage.setItem('pediatriaLimites2026', JSON.stringify(dataLimites)); }
+
+    function getDays(m) { return new Date(2026, m + 1, 0).getDate(); }
+    function isFinde(m, d) { 
+        var wd = new Date(2026, m, d).getDay(); 
+        return wd === 0 || wd === 6 || festivos.indexOf(m + "-" + d) !== -1; 
+    }
+
+    function renderCuadrante() {
+        var days = getDays(mesActual);
+        var h1 = '<tr><th>Pediatra</th>', h2 = '<tr><th>Día</th>';
+        for(var d=1; d<=days; d++) {
+            var wd = ["D","L","M","X","J","V","S"][new Date(2026, mesActual, d).getDay()];
+            var wk = isFinde(mesActual, d) ? 'class="weekend"' : '';
+            h1 += '<th ' + wk + '>' + d + '</th>'; h2 += '<th ' + wk + '>' + wd + '</th>';
+        }
+        document.getElementById('head-cuadrante').innerHTML = h1 + "</tr>" + h2 + "</tr>";
+        var bodyRows = "";
+        for (var i = 0; i < nombres.length; i++) {
+            var p = nombres[i], row = '<tr><td>' + p + '</td>';
+            for(var d=1; d<=days; d++) {
+                var val = (dataTurnos[mesActual] && dataTurnos[mesActual][p] && dataTurnos[mesActual][p][d]) ? dataTurnos[mesActual][p][d] : {t1:'', t2:''};
+                var wk = isFinde(mesActual, d) ? 'class="weekend"' : '';
+                row += '<td '+wk+'><select class="shift-select t1" onchange="saveT('+d+',\''+p+'\',\'t1\',this.value)">';
+                for(var j=0; j<opcionesT1.length; j++) row += '<option value="'+opcionesT1[j]+'" '+(val.t1===opcionesT1[j]?'selected':'')+'>'+(opcionesT1[j]||'-')+'</option>';
+                row += '</select><select class="shift-select t2" onchange="saveT('+d+',\''+p+'\',\'t2\',this.value)">';
+                for(var k=0; k<opcionesT2.length; k++) row += '<option value="'+opcionesT2[k]+'" '+(val.t2===opcionesT2[k]?'selected':'')+'>'+(opcionesT2[k]||'-')+'</option>';
+                row += '</select></td>';
+            }
+            bodyRows += row + "</tr>";
+        }
+        document.getElementById('body-cuadrante').innerHTML = bodyRows;
+        var cobRows = '<tr><td colspan="'+(days+1)+'" class="cob-header">COBERTURA DIARIA</td></tr>';
+        for (var t=0; t<turnosCobertura.length; t++) {
+            cobRows += '<tr><td style="background:#e9ecef; font-weight:bold;">' + turnosCobertura[t] + '</td>';
+            for(var d=1; d<=days; d++) cobRows += '<td id="c-' + d + '-' + turnosCobertura[t] + '"></td>';
+            cobRows += '</tr>';
+        }
+        document.getElementById('body-cobertura').innerHTML = cobRows;
+        calcCob();
+    }
+
+    function saveT(d, p, slot, v) {
+        if(!dataTurnos[mesActual]) dataTurnos[mesActual] = {}; if(!dataTurnos[mesActual][p]) dataTurnos[mesActual][p] = {};
+        if(!dataTurnos[mesActual][p][d]) dataTurnos[mesActual][p][d] = {t1:'', t2:''};
+        dataTurnos[mesActual][p][d][slot] = v;
+        if(v === 'GN' || v === 'GP') {
+            var nD = d+1, nM = mesActual; if(nD > getDays(mesActual)) { nD = 1; nM++; }
+            if(nM <= 11) {
+                if(!dataTurnos[nM]) dataTurnos[nM] = {}; if(!dataTurnos[nM][p]) dataTurnos[nM][p] = {}; if(!dataTurnos[nM][p][nD]) dataTurnos[nM][p][nD] = {t1:'', t2:''};
+                if(dataTurnos[nM][p][nD].t1 === '') dataTurnos[nM][p][nD].t1 = 'S'; else if(dataTurnos[nM][p][nD].t2 === '') dataTurnos[nM][p][nD].t2 = 'S';
+            }
+        }
+        localStorage.setItem('pediatriaData2026', JSON.stringify(dataTurnos)); renderCuadrante();
+    }
+
+    function procesarExcelBloqueos(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = new Uint8Array(e.target.result);
+            var workbook = XLSX.read(data, {type: 'array'});
+            var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            var jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+            var countBloqueos = 0;
+            var days = getDays(mesActual);
+
+            jsonData.forEach(function(row) {
+                var nombreExcel = String(row[0] || "").trim().toUpperCase();
+                var indexNombre = nombres.findIndex(n => n.toUpperCase() === nombreExcel);
+                
+                if (indexNombre !== -1) {
+                    var pediatraReal = nombres[indexNombre];
+                    if(!dataTurnos[mesActual]) dataTurnos[mesActual] = {};
+                    if(!dataTurnos[mesActual][pediatraReal]) dataTurnos[mesActual][pediatraReal] = {};
+
+                    for (var d = 1; d <= days; d++) {
+                        var valorCelda = String(row[d] || "").trim().toUpperCase();
+                        if (valorCelda === "X" || valorCelda === "EX") {
+                            if (!dataTurnos[mesActual][pediatraReal][d]) dataTurnos[mesActual][pediatraReal][d] = {t1:'', t2:''};
+                            dataTurnos[mesActual][pediatraReal][d].t2 = "EX";
+                            countBloqueos++;
+                        }
+                    }
+                }
+            });
+
+            localStorage.setItem('pediatriaData2026', JSON.stringify(dataTurnos));
+            renderCuadrante();
+            alert("Importación completada: Se han añadido " + countBloqueos + " bloqueos (EX) para " + meses[mesActual] + ".");
+            event.target.value = ""; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function exportarExcel() {
+        var days = getDays(mesActual), csv = "\uFEFF"; 
+        var r1 = ["Pediatra"]; for(var d=1; d<=days; d++) r1.push(d); csv += r1.join(";") + "\n";
+        for (var i = 0; i < nombres.length; i++) {
+            var p = nombres[i], rD = [p];
+            for(var d=1; d<=days; d++) {
+                var t = (dataTurnos[mesActual] && dataTurnos[mesActual][p] && dataTurnos[mesActual][p][d]) ? dataTurnos[mesActual][p][d] : {t1:'', t2:''};
+                rD.push(t.t1 && t.t2 ? t.t1 + "+" + t.t2 : t.t1 || t.t2 || "");
+            }
+            csv += rD.join(";") + "\n";
+        }
+        var l = document.createElement("a"); l.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        l.download = "Cuadrante_" + meses[mesActual] + ".csv"; l.click();
+    }
+
+    function autocompletarGuardias() {
+        if(!confirm("¿Rellenar guardias?")) return;
+        var days = getDays(mesActual);
+        function getC(p) {
+            var c = { t:0, vsd:0, gn:0, gp:0, r:0 };
+            if(dataTurnos[mesActual] && dataTurnos[mesActual][p]) {
+                for(var d in dataTurnos[mesActual][p]) {
+                    var v = dataTurnos[mesActual][p][d], hasG = (v.t1==='GN'||v.t2==='GN'||v.t1==='GP'||v.t2==='GP');
+                    if(hasG) { c.t++; var wd = new Date(2026, mesActual, parseInt(d)).getDay(); if(wd === 5 || wd === 6 || wd === 0) c.vsd++; if(v.t1==='GN'||v.t2==='GN') c.gn++; else c.gp++; }
+                    if(v.t1==='R'||v.t2==='R') { c.r++; c.t++; var wd = new Date(2026, mesActual, parseInt(d)).getDay(); if(wd === 5 || wd === 6 || wd === 0) c.vsd++; }
+                }
+            }
+            return c;
+        }
+        for(var d=1; d<=days; d++) {
+            var isW = isFinde(mesActual, d), wd = new Date(2026, mesActual, d).getDay();
+            var tasks = ['GN', 'GP', 'GP']; if(isW) tasks.push('R');
+            for(var a=0; a<tasks.length; a++) {
+                var sT = tasks[a], avail = [];
+                for(var i=0; i<nombres.length; i++) {
+                    var p = nombres[i]; if(sT==='GN' && allowedGN.indexOf(p)===-1) continue;
+                    if(!dataTurnos[mesActual]) dataTurnos[mesActual]={}; if(!dataTurnos[mesActual][p]) dataTurnos[mesActual][p]={}; if(!dataTurnos[mesActual][p][d]) dataTurnos[mesActual][p][d]={t1:'',t2:''};
+                    var td = dataTurnos[mesActual][p][d]; 
+                    if(td.t2 !== '' || td.t1 === 'L' || td.t1 === 'S') continue; 
+                    var ys = (d > 1) ? dataTurnos[mesActual][p][d-1] : null; if(ys && (ys.t1==='GN'||ys.t1==='GP'||ys.t2==='GN'||ys.t2==='GP')) continue;
+                    var tr = (d < days) ? dataTurnos[mesActual][p][d+1] : null; if(tr && (tr.t1==='L'||tr.t2==='L')) continue;
+                    var lim = dataLimites[mesActual] && dataLimites[mesActual][p] ? dataLimites[mesActual][p] : {maxGN:5, maxGP:5, maxR:5, maxT:5}, c = getC(p);
+                    if(sT==='GN' && c.gn>=lim.maxGN) continue; if(sT==='GP' && c.gp>=lim.maxGP) continue; if(sT==='R' && c.r>=lim.maxR) continue; if(c.t>=lim.maxT) continue;
+                    avail.push({ n:p, c:c });
+                }
+                avail.sort(function(a,b) { if((wd===5||wd===6||wd===0) && a.c.vsd!==b.c.vsd) return a.c.vsd - b.c.vsd; return a.c.t - b.c.t; });
+                if(avail.length > 0) {
+                    var ch = avail[0].n; dataTurnos[mesActual][ch][d].t2 = sT;
+                    if(sT==='GN'||sT==='GP') {
+                        var nD = d+1, nM = mesActual; if(nD > days) { nD=1; nM++; }
+                        if(nM<=11) { if(!dataTurnos[nM]) dataTurnos[nM]={}; if(!dataTurnos[nM][ch]) dataTurnos[nM][ch]={}; if(!dataTurnos[nM][ch][nD]) dataTurnos[nM][ch][nD]={t1:'',t2:''};
+                        if(dataTurnos[nM][ch][nD].t1==='') dataTurnos[nM][ch][nD].t1='S'; else if(dataTurnos[nM][ch][nD].t2==='') dataTurnos[nM][ch][nD].t2='S'; }
+                    }
+                }
+            }
+        }
+        localStorage.setItem('pediatriaData2026', JSON.stringify(dataTurnos)); renderCuadrante();
+    }
+
+    function autocompletarPatrones() {
+        var d = getDays(mesActual), countTue = 0, countFri = 0;
+        for(var i=1; i<=d; i++) {
+            var wd = new Date(2026, mesActual, i).getDay(); 
+            if(wd===2) countTue++; 
+            if(wd===5) countFri++; 
+            
+            if(isFinde(mesActual, i)) continue;
+            
+            for(var j=0; j<nombres.length; j++) {
+                var p = nombres[j]; 
+                if(!dataTurnos[mesActual]) dataTurnos[mesActual]={}; 
+                if(!dataTurnos[mesActual][p]) dataTurnos[mesActual][p]={};
+                if(!dataTurnos[mesActual][p][i]) dataTurnos[mesActual][p][i]={t1:'',t2:''}; 
+                
+                var t = dataTurnos[mesActual][p][i];
+                if(t.t1==='' && t.t2==='') {
+                    if(p==="BEATRIZ VILLAFUERTE QUISPE") { 
+                        if(wd===3) { t.t1='C'; t.t2='CTC'; } 
+                        else if(wd===2 && (countTue===2||countTue===4)) t.t1='C'; 
+                    }
+                    else if(p==="MIGUEL RICO PAJARES") { 
+                        if(wd===1) t.t2='CTC'; 
+                    }
+                    // -- NUEVOS PATRONES AQUÍ --
+                    else if(p==="CARLOS RICARDO TORRES ZEGARRA") {
+                        if(wd===1 || wd===5) { t.t1='C'; } // Lunes y Viernes
+                        else if(wd===3) { t.t1='C'; t.t2='CTC'; } // Miércoles
+                    }
+                    else if(p==="CECILIA PAREDES MERCADO") {
+                        if(wd===1) { t.t1='C'; t.t2='CTC'; } // Lunes
+                        else if(wd===3 || wd===4) { t.t1='C'; } // Miércoles y Jueves
+                        else if(wd===5 && countFri===2) { t.t1='HD'; } // 2º Viernes
+                    }
+                }
+            }
+        }
+        localStorage.setItem('pediatriaData2026', JSON.stringify(dataTurnos)); 
+        renderCuadrante();
+    }
+
+    function calcCob() {
+        var d = getDays(mesActual);
+        for(var i=1; i<=d; i++) {
+            var wd = new Date(2026, mesActual, i).getDay(), req = Object.assign({}, isFinde(mesActual, i) ? { 'U':0,'P':0,'N':0,'UT':0,'GN':1,'GP':2,'R':1,'HD':0 } : { 'U':3,'P':2,'N':2,'UT':1,'GN':1,'GP':1,'R':0,'HD':0 });
+            if(wd===4||wd===5) req['HD']=1; var c = {}; for(var t=0; t<turnosCobertura.length; t++) c[turnosCobertura[t]]=0;
+            for(var j=0; j<nombres.length; j++) {
+                var p = nombres[j]; if(dataTurnos[mesActual] && dataTurnos[mesActual][p] && dataTurnos[mesActual][p][i]) {
+                    var v = dataTurnos[mesActual][p][i]; if(v.t1 && c[v.t1]!==undefined) c[v.t1]++; if(v.t2 && c[v.t2]!==undefined) c[v.t2]++;
+                }
+            }
+            for(var k=0; k<turnosCobertura.length; k++) {
+                var tN = turnosCobertura[k], cell = document.getElementById('c-'+i+'-'+tN);
+                if(cell) { cell.innerText = req[tN]===0 && c[tN]===0 ? "-" : c[tN]+"/"+req[tN]; cell.className = (req[tN]===0 && c[tN]===0) ? "cob-zero" : (c[tN]>=req[tN]?"cob-ok":"cob-falta"); }
+            }
+        }
+    }
+
+    function renderRecuentos() {
+        var allT = ["U","P","N","C","HD","UT","CT","CTC","GN","GP","R","S","L","EX"];
+        document.getElementById('h3-recuento-mensual').innerText = 'Recuento de ' + meses[mesActual];
+        var h = '<thead><tr><th>Pediatra</th>'; for(var i=0; i<allT.length; i++) h+='<th>'+allT[i]+'</th>'; h+='<th>TOTAL</th></tr></thead><tbody>';
+        for(var i=0; i<nombres.length; i++) {
+            var p = nombres[i], c = {}; for(var j=0; j<allT.length; j++) c[allT[j]]=0;
+            if(dataTurnos[mesActual] && dataTurnos[mesActual][p]) for(var d in dataTurnos[mesActual][p]) { var v=dataTurnos[mesActual][p][d]; if(v.t1 && c[v.t1]!==undefined) c[v.t1]++; if(v.t2 && c[v.t2]!==undefined) c[v.t2]++; }
+            var tot=0; for(var k in c) if(k!=="L" && k!=="S" && k!=="EX") tot+=c[k];
+            h += '<tr><td>'+p+'</td>'; for(var m=0; m<allT.length; m++) h+='<td>'+c[allT[m]]+'</td>'; h+='<td><strong>'+tot+'</strong></td></tr>';
+        }
+        document.getElementById('table-recuento-mensual').innerHTML = h + "</tbody>";
+
+        var hEsp = '<thead><tr><th rowspan="2">Pediatra</th><th class="grupo-lj">Lun-Jue</th><th class="grupo-v">Vie</th><th colspan="2" class="grupo-s">Sáb</th><th colspan="2" class="grupo-d">Dom/Fes</th><th colspan="2" class="grupo-tot">Total FS</th><th rowspan="2">G Total</th></tr><tr class="doble-header"><th class="grupo-lj">G</th><th class="grupo-v">G</th><th class="grupo-s">G</th><th class="grupo-s">R</th><th class="grupo-d">G</th><th class="grupo-d">R</th><th class="grupo-tot">G</th><th class="grupo-tot">R</th></tr></thead><tbody>';
+        for(var i=0; i<nombres.length; i++) {
+            var p = nombres[i], g_lj=0, g_v=0, g_s=0, r_s=0, g_d=0, r_d=0;
+            if(dataTurnos[mesActual] && dataTurnos[mesActual][p]) for(var dK in dataTurnos[mesActual][p]) {
+                var dN = parseInt(dK), v=dataTurnos[mesActual][p][dN], wd=new Date(2026, mesActual, dN).getDay(), isF=festivos.indexOf(mesActual+"-"+dN)!==-1;
+                var isG = (v.t1==='GN'||v.t2==='GN'||v.t1==='GP'||v.t2==='GP'), isR = (v.t1==='R'||v.t2==='R');
+                if(wd>=1 && wd<=4 && !isF) { if(isG) g_lj++; }
+                else if(wd===5 && !isF) { if(isG) g_v++; }
+                else if(wd===6 && !isF) { if(isG) g_s++; if(isR) r_s++; }
+                else { if(isG) g_d++; if(isR) r_d++; }
+            }
+            var g_fs=g_v+g_s+g_d, r_fs=r_s+r_d;
+            hEsp += '<tr><td><strong>'+p+'</strong></td><td class="grupo-lj">'+g_lj+'</td><td class="grupo-v">'+g_v+'</td><td class="grupo-s">'+g_s+'</td><td class="grupo-s">'+r_s+'</td><td class="grupo-d">'+g_d+'</td><td class="grupo-d">'+r_d+'</td><td class="grupo-tot"><strong>'+g_fs+'</strong></td><td class="grupo-tot"><strong>'+r_fs+'</strong></td><td><strong>'+(g_lj+g_fs)+'</strong></td></tr>';
+        }
+        document.getElementById('table-especial-finde').innerHTML = hEsp + "</tbody>";
+
+        var hAn = '<thead><tr><th>Pediatra</th>'; for(var i=0; i<meses.length; i++) hAn+='<th>'+meses[i].substring(0,3)+'</th>'; hAn+='<th style="background:#2a9d8f">TOTAL 2026</th></tr></thead><tbody>';
+        for(var i=0; i<nombres.length; i++) {
+            var p = nombres[i], tAn=0, mRows="";
+            for(var mI=0; mI<meses.length; mI++) {
+                var mS=0; if(dataTurnos[mI] && dataTurnos[mI][p]) for(var dM in dataTurnos[mI][p]) { var v=dataTurnos[mI][p][dM]; if(v.t1 && v.t1!=="L" && v.t1!=="S" && v.t1!=="EX") mS++; if(v.t2 && v.t2!=="L" && v.t2!=="S" && v.t2!=="EX") mS++; }
+                tAn+=mS; mRows+='<td>'+mS+'</td>';
+            }
+            hAn += '<tr><td>'+p+'</td>'+mRows+'<td style="font-weight:bold; background:#e9ecef;">'+tAn+'</td></tr>';
+        }
+        document.getElementById('table-anual').innerHTML = hAn + "</tbody>";
+    }
+    init();
+</script>
+</body>
+</html>
