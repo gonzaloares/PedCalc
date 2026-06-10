@@ -14,8 +14,8 @@
 
             /* Colores Acentuados / Alternativos */
             --yellow: #e7b145;
-            --orange: #f5a623;
             --critical-red: #A01D2D; /* rgb(160, 29, 45) | hsl(353, 69%, 37%) */
+            --orange: var(--critical-red); /* Alias legado: el naranja se sustituye por granate */
             --brown: #e1be96;
             --blue-light: #d2e9f3;
 
@@ -46,7 +46,7 @@
             --primary-border-hover: #003031;
             --secondary: var(--grey-dark);
             --success: var(--primary);
-            --danger: var(--orange);
+            --danger: var(--critical-red);
             --warning: var(--yellow);
             --bg: var(--grey-light);
             --card: var(--white);
@@ -147,7 +147,7 @@
         .btn-primary:hover, .btn-primary:focus, .btn-action:hover, .btn-action:focus, .btn-start:hover, .btn-start:focus { background-color: var(--primary-hover); border-color: var(--primary-border-hover); }
         .btn-timer { flex: 1; padding: 10px; font-size: 1rem; }
         .btn-start { background: var(--primary); }
-        .btn-pause { background: var(--yellow); border-color: var(--orange); color: var(--black); }
+        .btn-pause { background: var(--yellow); border-color: var(--critical-red); color: var(--black); }
         .btn-reset { background: var(--new-grey-dark); border-color: var(--grey-dark); }
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--medium-gap); margin-bottom: 15px; }
@@ -163,7 +163,7 @@
         .log-name-input:focus { border-color: var(--primary); background: var(--white); }
         .log-controls { display: flex; gap: var(--xsmall-gap); margin-left: 5px;}
         .btn-move, .btn-del { border: none; background: var(--grey-lighter); border-radius: 2px; padding: 6px 8px; font-size: 0.8rem; cursor: pointer; color: var(--primaryText); }
-        .btn-del { background: var(--orange); color: var(--black); }
+        .btn-del { background: var(--critical-red); color: var(--white); }
         .sri-selector { width: 100%; padding: var(--large-gap); font-size: 1rem; font-weight: bold; border: 2px solid var(--primary); border-radius: 2px; background: var(--white); color: var(--primary); outline: none; margin-bottom: 15px; }
 
     </style>
@@ -344,7 +344,7 @@
     </div>
 
     <div id="sri" class="tab-content">
-        <div class="section-title" style="background-color: var(--orange); color: var(--black);">Material Vía Aérea (Cálculo Automático)</div>
+        <div class="section-title" style="background-color: var(--critical-red); color: var(--white);">Material Vía Aérea (Cálculo Automático)</div>
         <div class="airway-grid" id="sri-airway-panel">
             <div class="airway-item"><span class="airway-label">TET (Sin/Con Balón)</span><span class="airway-val" id="sri-val-tet">-- / --</span></div>
             <div class="airway-item"><span class="airway-label">Profundidad (Boca)</span><span class="airway-val" id="sri-val-cm">-- cm</span></div>
@@ -546,7 +546,7 @@
     // --- RENDERIZADO DEL HTML ---
     function construirHTML() {
         const containerEm = document.getElementById('emergencias-sections');
-        const bgColors = ['var(--critical-red)', 'var(--orange)', 'var(--new-grey-dark)', 'var(--primary-public)', 'var(--grey-dark)', 'var(--brown)', 'var(--primary-hover)', 'var(--new-grey-light)', 'var(--black)', 'var(--primary-dark)'];
+        const bgColors = ['var(--critical-red)', 'var(--critical-red)', 'var(--new-grey-dark)', 'var(--primary-public)', 'var(--grey-dark)', 'var(--brown)', 'var(--primary-hover)', 'var(--new-grey-light)', 'var(--black)', 'var(--primary-dark)'];
         let htmlEm = '', currentCat = '', colorIdx = 0;
 
         emergenciasData.forEach((drug, index) => {
@@ -672,7 +672,7 @@
             const closest = airwayData.reduce((prev, curr) => Math.abs(curr.w - peso) < Math.abs(prev.w - peso) ? curr : prev);
             tetSin = closest.tet;
             tetCon = closest.tetB;
-            tetAlert = '<br><span style="color:var(--orange); font-size:0.65rem; display:block; margin-top:2px;">⚠️ Estimado por peso (Falta edad)</span>';
+            tetAlert = '<br><span style="color:var(--critical-red); font-size:0.65rem; display:block; margin-top:2px;">⚠️ Estimado por peso (Falta edad)</span>';
         }
 
         const closestGuedel = airwayData.reduce((prev, curr) => Math.abs(curr.w - peso) < Math.abs(prev.w - peso) ? curr : prev);
@@ -841,7 +841,7 @@
                 }
             }
             
-            document.getElementById(`${perf.id}-prep`).innerHTML = `Extraer <b style="color:var(--orange); font-size:1.1rem;">${volFinalDisplay.toFixed(2)} ml</b> de la ampolla (equivale a ${cantidadMg.toFixed(2)} ${perf.unit}).<br>Completar con SG5% o SSF hasta llegar a <b style="color:var(--orange);">50 ml</b> totales.`;
+            document.getElementById(`${perf.id}-prep`).innerHTML = `Extraer <b style="color:var(--critical-red); font-size:1.1rem;">${volFinalDisplay.toFixed(2)} ml</b> de la ampolla (equivale a ${cantidadMg.toFixed(2)} ${perf.unit}).<br>Completar con SG5% o SSF hasta llegar a <b style="color:var(--critical-red);">50 ml</b> totales.`;
             
             calcularBomba(perf.id, factor);
         });
