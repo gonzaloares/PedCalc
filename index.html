@@ -900,18 +900,93 @@
     }
 
     // --- MÓDULO SRI ---
+    const sriProtocolos = {
+        hipotension: {
+            title: 'Hipotensión Arterial',
+            drugs: ['Ketamina 50 mg/1 ml', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Succinilcolina 100 mg/2 ml']
+        },
+        asma: {
+            title: 'Estatus Asmático',
+            drugs: ['Ketamina 50 mg/1 ml', 'Salbutamol 5 mg/1 ml', 'Bromuro Ipratropio 250mcg/ml', 'Sulfato de magnesio 15%', 'Rocuronio 50 mg/5 ml']
+        },
+        estatus: {
+            title: 'Estatus Convulsivo / HTIC',
+            drugs: ['Midazolam 5 mg/1 ml (SRI)', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Suero Hipertónico 3%', 'Manitol 20% 20 g/100 ml']
+        },
+        sepsis: {
+            title: 'Sepsis',
+            drugs: ['Ketamina 50 mg/1 ml', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Adrenalina 1:1000 1 mg/1 ml', 'Noradrenalina']
+        },
+        trauma: {
+            title: 'Politraumatismo',
+            drugs: ['Fentanilo 0.15 mg/3 ml', 'Ketamina 50 mg/1 ml', 'Rocuronio 50 mg/5 ml', 'Ácido tranexámico 500 mg/5 ml', 'Suero Hipertónico 3%']
+        }
+    };
+
+    function buscarFarmacoSri(nombre) {
+        return emergenciasData.find(drug => drug.principio === nombre) || perfusionesData.find(perf => perf.name === nombre);
+    }
+
+    function renderSriCard(item, peso) {
+        const isPerfusion = Object.prototype.hasOwnProperty.call(item, 'name');
+        const nombre = isPerfusion ? item.name : item.principio;
+        const indicacion = isPerfusion ? item.ind : item.indicacion;
+        const via = isPerfusion ? 'Perfusión' : item.via;
+        const dosis = isPerfusion ? item.range : item.dosis_mg_kg;
+        const reconstitucion = isPerfusion ? `Preparar en jeringa de 50 ml. ${item.equiv || item.equivCentral}` : item.reconstitucion;
+        const consideraciones = isPerfusion ? `Presentación: ${item.pres}. Ajustar según situación clínica.` : item.consideraciones;
+        let volumen = '--';
+        let cantidad = '--';
+        const unidad = item.unit;
+
+        if (peso && peso > 0) {
+            if (isPerfusion) {
+                const cantidadPerf = peso * item.rule;
+                const volumenPerf = cantidadPerf / item.conc;
+                volumen = `${volumenPerf.toFixed(2)} ml`;
+                cantidad = `${formatearDosis(cantidadPerf)} ${unidad}`;
+            } else {
+                const val = item.calc(peso);
+                volumen = `${(val / item.conc).toFixed(2)} ml`;
+                cantidad = `${formatearDosis(val)} ${unidad}`;
+            }
+        }
+
+        return `
+            <div class="med-card">
+                <div class="mc-header">
+                    <span class="mc-title">${nombre}</span>
+                    <div class="mc-tags"><span class="tag tag-ind">${indicacion}</span><span class="tag tag-via">${via}</span></div>
+                </div>
+                <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text">${reconstitucion}</span></div>
+                <div class="mc-grid">
+                    <div class="mc-box mc-highlight"><div class="mc-box-label">DOSIS ML</div><div class="mc-box-val ml-text${peso > 0 ? ' calculated' : ''}">${volumen}</div></div>
+                    <div class="mc-box"><div class="mc-box-label">DOSIS</div><div class="mc-box-val${peso > 0 ? ' calculated' : ''}">${cantidad}</div></div>
+                    <div class="mc-box"><div class="mc-box-label">REFERENCIA</div><div class="mc-box-val" style="font-size:0.85rem;">${dosis}</div></div>
+                </div>
+                <div class="mc-row"><span class="mc-label">CONSIDERACIONES:</span> <span class="consid-text">${consideraciones}</span></div>
+            </div>`;
+    }
+
     function renderSRI() {
         const scenario = document.getElementById('sri-scenario').value;
         const container = document.getElementById('sri-farmacos-container');
+        const peso = parseFloat(document.getElementById('peso-input').value);
         
         if (!scenario) {
             container.innerHTML = '<p style="text-align:center; color:var(--secondary); font-style:italic;">Selecciona un escenario clínico para ver los fármacos recomendados.</p>';
             return;
         }
 
-        container.innerHTML = `<p style="text-align:center; font-weight:bold; color:var(--primary); padding:20px;">
-            ¡Listo! Cuando me digas los fármacos para "${scenario}", los mostraré aquí ordenados secuencialmente y calculados automáticamente según el peso.
-        </p>`;
+        const protocolo = sriProtocolos[scenario];
+        const farmacos = protocolo.drugs.map(buscarFarmacoSri).filter(Boolean);
+        const avisoPeso = (!peso || peso <= 0) ? '<p style="text-align:center; color:var(--critical-red); font-weight:bold;">Introduce el peso para calcular automáticamente dosis y mililitros.</p>' : '';
+
+        container.innerHTML = `
+            <div class="section-title" style="background-color: var(--critical-red); color: var(--white);">${protocolo.title}</div>
+            ${avisoPeso}
+            ${farmacos.map(farmaco => renderSriCard(farmaco, peso)).join('')}
+        `;
     }
 
 
