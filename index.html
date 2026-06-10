@@ -903,19 +903,23 @@
     const sriProtocolos = {
         hipotension: {
             title: 'Hipotensión Arterial',
-            drugs: ['Ketamina 50 mg/1 ml', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Succinilcolina 100 mg/2 ml']
+            note: 'Suele preferirse Ketamina + Rocuronio.',
+            drugs: ['Ketamina 50 mg/1 ml', 'Rocuronio 50 mg/5 ml']
         },
         asma: {
             title: 'Estatus Asmático',
-            drugs: ['Ketamina 50 mg/1 ml', 'Salbutamol 5 mg/1 ml', 'Bromuro Ipratropio 250mcg/ml', 'Sulfato de magnesio 15%', 'Rocuronio 50 mg/5 ml']
+            note: 'Ketamina por su efecto broncodilatador + Rocuronio.',
+            drugs: ['Ketamina 50 mg/1 ml', 'Rocuronio 50 mg/5 ml']
         },
         estatus: {
             title: 'Estatus Convulsivo / HTIC',
-            drugs: ['Midazolam 5 mg/1 ml (SRI)', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Suero Hipertónico 3%', 'Manitol 20% 20 g/100 ml']
+            note: 'Etomidato + Rocuronio.',
+            drugs: ['Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml']
         },
         sepsis: {
             title: 'Sepsis',
-            drugs: ['Ketamina 50 mg/1 ml', 'Etomidato 20 mg/10 ml', 'Rocuronio 50 mg/5 ml', 'Adrenalina 1:1000 1 mg/1 ml', 'Noradrenalina']
+            note: 'Suele preferirse Ketamina + Rocuronio.',
+            drugs: ['Ketamina 50 mg/1 ml', 'Rocuronio 50 mg/5 ml']
         },
         trauma: {
             title: 'Politraumatismo',
@@ -981,9 +985,11 @@
         const protocolo = sriProtocolos[scenario];
         const farmacos = protocolo.drugs.map(buscarFarmacoSri).filter(Boolean);
         const avisoPeso = (!peso || peso <= 0) ? '<p style="text-align:center; color:var(--critical-red); font-weight:bold;">Introduce el peso para calcular automáticamente dosis y mililitros.</p>' : '';
+        const notaProtocolo = protocolo.note ? `<div class="prep-text" style="margin-bottom: var(--large-gap); border-left: 3px solid var(--critical-red);">${protocolo.note}</div>` : '';
 
         container.innerHTML = `
             <div class="section-title" style="background-color: var(--critical-red); color: var(--white);">${protocolo.title}</div>
+            ${notaProtocolo}
             ${avisoPeso}
             ${farmacos.map(farmaco => renderSriCard(farmaco, peso)).join('')}
         `;
