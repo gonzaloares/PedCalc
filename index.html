@@ -15,6 +15,7 @@
             /* Colores Acentuados / Alternativos */
             --yellow: #e7b145;
             --orange: #f5a623;
+            --critical-red: #A01D2D; /* rgb(160, 29, 45) | hsl(353, 69%, 37%) */
             --brown: #e1be96;
             --blue-light: #d2e9f3;
 
@@ -123,7 +124,7 @@
         .airway-item { display: flex; flex-direction: column; }
         .airway-label { font-size: 0.6rem; font-weight: bold; color: var(--primary); text-transform: uppercase; }
         .airway-val { font-size: 0.9rem; color: var(--primaryText); font-weight: 600; }
-        .energy-box { grid-column: span 2; background: var(--primary); color: var(--white); padding: var(--medium-gap); border-radius: 2px; text-align: center; font-size: 0.95rem; font-weight: bold; margin-top: 5px; line-height: 1.4; }
+        .energy-box { grid-column: span 2; background: var(--critical-red); color: var(--white); padding: var(--medium-gap); border-radius: 2px; text-align: center; font-size: 0.95rem; font-weight: bold; margin-top: 5px; line-height: 1.4; }
         .energy-sub { font-size: 0.8rem; font-weight: normal; color: var(--blue-light); }
 
         .perf-interactive { background: var(--grey-opacity-medium); padding: 10px; border-radius: 2px; display: flex; align-items: center; justify-content: space-between; margin-top: 10px; border: 1px solid var(--border); }
@@ -545,7 +546,7 @@
     // --- RENDERIZADO DEL HTML ---
     function construirHTML() {
         const containerEm = document.getElementById('emergencias-sections');
-        const bgColors = ['var(--primary)', 'var(--orange)', 'var(--new-grey-dark)', 'var(--primary-public)', 'var(--grey-dark)', 'var(--brown)', 'var(--primary-hover)', 'var(--new-grey-light)', 'var(--black)', 'var(--primary-dark)'];
+        const bgColors = ['var(--critical-red)', 'var(--orange)', 'var(--new-grey-dark)', 'var(--primary-public)', 'var(--grey-dark)', 'var(--brown)', 'var(--primary-hover)', 'var(--new-grey-light)', 'var(--black)', 'var(--primary-dark)'];
         let htmlEm = '', currentCat = '', colorIdx = 0;
 
         emergenciasData.forEach((drug, index) => {
