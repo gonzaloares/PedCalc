@@ -111,6 +111,7 @@
         .consid-text { color: var(--grey-dark); font-style: italic; }
 
         .mc-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--small-gap); margin: var(--large-gap) 0; }
+        .mc-grid-sri { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--small-gap); margin: var(--large-gap) 0; }
         .mc-box { background: var(--grey-light); border: 1px solid var(--border); border-radius: 2px; padding: var(--small-gap); text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .mc-highlight { background: var(--blue-light); border: 2px solid var(--primary); box-shadow: 0 2px 4px rgba(0, 132, 136, 0.15); }
         .mc-box-label { font-size: 0.6rem; font-weight: bold; color: var(--grey-dark); margin-bottom: var(--xsmall-gap); }
@@ -976,25 +977,108 @@
         const scenario = document.getElementById('sri-scenario').value;
         const container = document.getElementById('sri-farmacos-container');
         const peso = parseFloat(document.getElementById('peso-input').value);
-        
+
         if (!scenario) {
             container.innerHTML = '<p style="text-align:center; color:var(--secondary); font-style:italic;">Selecciona un escenario clínico para ver los fármacos recomendados.</p>';
             return;
         }
 
-        const protocolo = sriProtocolos[scenario];
-        const farmacos = protocolo.drugs.map(buscarFarmacoSri).filter(Boolean);
-        const avisoPeso = (!peso || peso <= 0) ? '<p style="text-align:center; color:var(--critical-red); font-weight:bold;">Introduce el peso para calcular automáticamente dosis y mililitros.</p>' : '';
-        const notaProtocolo = protocolo.note ? `<div class="prep-text" style="margin-bottom: var(--large-gap); border-left: 3px solid var(--critical-red);">${protocolo.note}</div>` : '';
+        if (!peso || peso <= 0) {
+            container.innerHTML = '<p style="text-align:center; font-weight:bold; color:var(--danger); padding:20px;">⚠️ Introduce el peso del paciente en la barra superior para calcular las dosis.</p>';
+            return;
+        }
 
-        container.innerHTML = `
-            <div class="section-title" style="background-color: var(--critical-red); color: var(--white);">${protocolo.title}</div>
-            ${notaProtocolo}
-            ${avisoPeso}
-            ${farmacos.map(farmaco => renderSriCard(farmaco, peso)).join('')}
-        `;
+        let html = '';
+
+        if (scenario === 'hipotension' || scenario === 'asma' || scenario === 'sepsis' || scenario === 'trauma') {
+            let mgKetamina = Math.min(peso * 2, 100);
+            let mlKetamina = mgKetamina / 10;
+
+            let mgRocuronio = Math.min(peso * 1, 50);
+            let mlRocuronio = mgRocuronio / 10;
+
+            let mgAtropina = Math.min(peso * 0.01, 0.5);
+            let mlAtropina = mgAtropina / 0.1;
+
+            html += `
+            <div class="med-card" style="border-left: 4px solid var(--primary);">
+                <div class="mc-header"><span class="mc-title">1. SEDACIÓN: Ketamina</span></div>
+                <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text">Ketamina 2 ml (100 mg) + SSF 8 ml. CF: 10 mg = 1 ml.</span></div>
+                <div class="mc-grid-sri">
+                    <div class="mc-box mc-highlight"><div class="mc-box-label">DOSIS ML</div><div class="mc-box-val ml-text calculated" style="color:var(--primary); font-size:1.5rem;">${mlKetamina.toFixed(1)} ml</div></div>
+                    <div class="mc-box"><div class="mc-box-label">DOSIS MG</div><div class="mc-box-val calculated">${formatearDosis(mgKetamina)} mg</div></div>
+                    <div class="mc-box"><div class="mc-box-label">MG/KG</div><div class="mc-box-val" style="font-size:0.85rem;">2 mg/kg</div></div>
+                </div>
+            </div>
+
+            <div class="med-card" style="border-left: 4px solid var(--critical-red);">
+                <div class="mc-header"><span class="mc-title">2. RELAJACIÓN: Rocuronio</span></div>
+                <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text">Sin diluir (10 mg = 1 ml).</span></div>
+                <div class="mc-grid-sri">
+                    <div class="mc-box mc-highlight"><div class="mc-box-label">DOSIS ML</div><div class="mc-box-val ml-text calculated" style="color:var(--primary); font-size:1.5rem;">${mlRocuronio.toFixed(1)} ml</div></div>
+                    <div class="mc-box"><div class="mc-box-label">DOSIS MG</div><div class="mc-box-val calculated">${formatearDosis(mgRocuronio)} mg</div></div>
+                    <div class="mc-box"><div class="mc-box-label">MG/KG</div><div class="mc-box-val" style="font-size:0.85rem;">1 mg/kg</div></div>
+                </div>
+            </div>
+            `;
+            html += generarBloqueAtropina(mlAtropina, mgAtropina);
+        } else if (scenario === 'estatus') {
+            let mgEtomidato = Math.min(peso * 0.3, 20);
+            let mlEtomidato = mgEtomidato / 2;
+
+            let mgRocuronio = Math.min(peso * 1, 50);
+            let mlRocuronio = mgRocuronio / 10;
+
+            let mgAtropina = Math.min(peso * 0.01, 0.5);
+            let mlAtropina = mgAtropina / 0.1;
+
+            html += `
+            <div class="med-card" style="border-left: 4px solid var(--primary);">
+                <div class="mc-header"><span class="mc-title">1. SEDACIÓN: Etomidato</span></div>
+                <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text">Sin diluir (Vial de 20 mg/10 ml). CF: 2 mg = 1 ml.</span></div>
+                <div class="mc-grid-sri">
+                    <div class="mc-box mc-highlight"><div class="mc-box-label">DOSIS ML</div><div class="mc-box-val ml-text calculated" style="color:var(--primary); font-size:1.5rem;">${mlEtomidato.toFixed(1)} ml</div></div>
+                    <div class="mc-box"><div class="mc-box-label">DOSIS MG</div><div class="mc-box-val calculated">${formatearDosis(mgEtomidato)} mg</div></div>
+                    <div class="mc-box"><div class="mc-box-label">MG/KG</div><div class="mc-box-val" style="font-size:0.85rem;">0.3 mg/kg</div></div>
+                </div>
+            </div>
+
+            <div class="med-card" style="border-left: 4px solid var(--critical-red);">
+                <div class="mc-header"><span class="mc-title">2. RELAJACIÓN: Rocuronio</span></div>
+                <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text">Sin diluir (10 mg = 1 ml).</span></div>
+                <div class="mc-grid-sri">
+                    <div class="mc-box mc-highlight"><div class="mc-box-label">DOSIS ML</div><div class="mc-box-val ml-text calculated" style="color:var(--primary); font-size:1.5rem;">${mlRocuronio.toFixed(1)} ml</div></div>
+                    <div class="mc-box"><div class="mc-box-label">DOSIS MG</div><div class="mc-box-val calculated">${formatearDosis(mgRocuronio)} mg</div></div>
+                    <div class="mc-box"><div class="mc-box-label">MG/KG</div><div class="mc-box-val" style="font-size:0.85rem;">1 mg/kg</div></div>
+                </div>
+            </div>
+            `;
+            html += generarBloqueAtropina(mlAtropina, mgAtropina);
+        }
+
+        container.innerHTML = html;
     }
 
+    function generarBloqueAtropina(ml, mg) {
+        return `
+        <div class="section-title" style="background-color: var(--critical-red); color: var(--white);">Consideraciones especiales</div>
+        <div class="med-card" style="border-left: 4px solid var(--critical-red); background-color: var(--grey-light);">
+            <div class="mc-header"><span class="mc-title" style="color: var(--critical-red);">ATROPINA</span></div>
+            <div class="mc-row" style="margin-bottom: 8px;">
+                <span class="mc-label" style="color: var(--critical-red);">INDICACIONES:</span>
+                <span class="consid-text" style="display:block; color: var(--primaryText); margin-top: 4px;">
+                    1-5 años si se usa más de una dosis de succinilcolina. Cualquier edad si presenta bradicardia.
+                </span>
+            </div>
+            <div class="mc-row"><span class="mc-label">PREPARACIÓN:</span> <span class="prep-text" style="background: var(--blue-light); color: var(--primaryText);">Atropina 1 ml (1 mg) + SSF 9 ml. CF: 0.1 mg = 1 ml.</span></div>
+            <div class="mc-grid-sri">
+                <div class="mc-box mc-highlight" style="background: var(--blue-light); border-color: var(--critical-red); box-shadow:none;"><div class="mc-box-label" style="color: var(--critical-red);">DOSIS ML</div><div class="mc-box-val ml-text calculated" style="color:var(--critical-red); font-size:1.5rem;">${ml.toFixed(2)} ml</div></div>
+                <div class="mc-box" style="background: var(--white); border-color: var(--grey-lighter);"><div class="mc-box-label" style="color: var(--critical-red);">DOSIS MG</div><div class="mc-box-val calculated" style="color:var(--primaryText);">${mg.toFixed(2)} mg</div></div>
+                <div class="mc-box" style="background: var(--white); border-color: var(--grey-lighter);"><div class="mc-box-label" style="color: var(--critical-red);">MG/KG</div><div class="mc-box-val" style="font-size:0.8rem; color:var(--primaryText);">0.01 mg/kg<br>(Máx 0.5 mg)</div></div>
+            </div>
+        </div>
+        `;
+    }
 
     // --- MÓDULO REGISTRO CRÍTICOS (CRONÓMETRO Y LOG) ---
     let timerInterval;
