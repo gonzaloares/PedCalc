@@ -15,6 +15,7 @@
             /* Colores Acentuados / Alternativos */
             --yellow: #e7b145;
             --critical-red: #A01D2D; /* rgb(160, 29, 45) | hsl(353, 69%, 37%) */
+            --critical-red-dark: #7f1724;
             --orange: var(--critical-red); /* Alias legado: el naranja se sustituye por granate */
             --brown: #e1be96;
             --blue-light: #d2e9f3;
@@ -147,9 +148,10 @@
         .btn-primary, .btn-timer, .btn-action { color: var(--white); background-color: var(--primary); border: 1px solid var(--primary-dark); border-radius: 2px; padding: 6px 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .btn-primary:hover, .btn-primary:focus, .btn-action:hover, .btn-action:focus, .btn-start:hover, .btn-start:focus { background-color: var(--primary-hover); border-color: var(--primary-border-hover); }
         .btn-timer { flex: 1; padding: 10px; font-size: 1rem; }
-        .btn-start { background: var(--primary); }
+        .btn-start { background: var(--primary); border-color: var(--primary-dark); color: var(--white); }
         .btn-pause { background: var(--yellow); border-color: var(--critical-red); color: var(--black); }
-        .btn-reset { background: var(--new-grey-dark); border-color: var(--grey-dark); }
+        .btn-reset { background: var(--critical-red); border-color: var(--critical-red-dark); color: var(--white); }
+        .btn-reset:hover, .btn-reset:focus { background: var(--critical-red-dark); border-color: var(--critical-red-dark); }
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--medium-gap); margin-bottom: 15px; }
         .btn-action:active { background: var(--primary-hover); }
