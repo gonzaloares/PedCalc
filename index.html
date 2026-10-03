@@ -15,6 +15,7 @@
             /* Colores Acentuados / Alternativos */
             --yellow: #e7b145;
             --critical-red: #A01D2D; /* rgb(160, 29, 45) | hsl(353, 69%, 37%) */
+            --critical-red-dark: #7f1724;
             --orange: var(--critical-red); /* Alias legado: el naranja se sustituye por granate */
             --brown: #e1be96;
             --blue-light: #d2e9f3;
@@ -147,9 +148,10 @@
         .btn-primary, .btn-timer, .btn-action { color: var(--white); background-color: var(--primary); border: 1px solid var(--primary-dark); border-radius: 2px; padding: 6px 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .btn-primary:hover, .btn-primary:focus, .btn-action:hover, .btn-action:focus, .btn-start:hover, .btn-start:focus { background-color: var(--primary-hover); border-color: var(--primary-border-hover); }
         .btn-timer { flex: 1; padding: 10px; font-size: 1rem; }
-        .btn-start { background: var(--primary); }
+        .btn-start { background: var(--primary); border-color: var(--primary-dark); color: var(--white); }
         .btn-pause { background: var(--yellow); border-color: var(--critical-red); color: var(--black); }
-        .btn-reset { background: var(--new-grey-dark); border-color: var(--grey-dark); }
+        .btn-reset { background: var(--critical-red); border-color: var(--critical-red-dark); color: var(--white); }
+        .btn-reset:hover, .btn-reset:focus { background: var(--critical-red-dark); border-color: var(--critical-red-dark); }
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--medium-gap); margin-bottom: 15px; }
         .btn-action:active { background: var(--primary-hover); }
@@ -165,6 +167,11 @@
         .log-controls { display: flex; gap: var(--xsmall-gap); margin-left: 5px;}
         .btn-move, .btn-del { border: none; background: var(--grey-lighter); border-radius: 2px; padding: 6px 8px; font-size: 0.8rem; cursor: pointer; color: var(--primaryText); }
         .btn-del { background: var(--critical-red); color: var(--white); }
+        .adrenaline-alert { display: none; background: var(--critical-red); color: var(--white); border: 2px solid var(--critical-red); border-radius: 2px; padding: var(--large-gap); margin-bottom: var(--large-gap); text-align: center; font-weight: bold; box-shadow: 0 4px 10px var(--grey-opacity-medium); animation: adrenalinePulse 1s infinite alternate; }
+        .adrenaline-alert.active { display: block; }
+        .adrenaline-alert .alert-title { font-size: 1rem; text-transform: uppercase; margin-bottom: var(--xsmall-gap); }
+        .adrenaline-alert .alert-subtitle { font-size: 0.85rem; font-weight: 600; }
+        @keyframes adrenalinePulse { from { opacity: 0.85; } to { opacity: 1; transform: scale(1.01); } }
         .sri-selector { width: 100%; padding: var(--large-gap); font-size: 1rem; font-weight: bold; border: 2px solid var(--primary); border-radius: 2px; background: var(--white); color: var(--primary); outline: none; margin-bottom: 15px; }
 
     </style>
@@ -375,6 +382,11 @@
                 <button class="btn-timer btn-start" onclick="toggleTimer()" id="btn-start-timer">INICIAR</button>
                 <button class="btn-timer btn-reset" onclick="resetTimer()">RESET</button>
             </div>
+        </div>
+
+        <div id="adrenaline-alert" class="adrenaline-alert" role="alert" aria-live="assertive">
+            <div class="alert-title">⚠️ Nueva dosis de adrenalina</div>
+            <div class="alert-subtitle">Han pasado 3 minutos desde la última administración registrada.</div>
         </div>
 
         <div class="section-title" style="background-color: var(--new-grey-dark);">Intervenciones Rápidas</div>
@@ -1088,6 +1100,10 @@
     let audioCtx = null;
     let metronomeInterval = null;
     let isMetronomePlaying = false;
+    let adrenalineDueAt = null;
+    let adrenalineAlertActive = false;
+    let adrenalineAlarmInterval = null;
+    let adrenalineAlarmBeeps = 0;
 
     function formatTime(totalSeconds) {
         const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -1113,6 +1129,7 @@
             timerInterval = setInterval(() => {
                 timerSeconds++;
                 document.getElementById('stopwatch').innerText = formatTime(timerSeconds);
+                checkAdrenalineReminder();
             }, 1000);
         }
     }
@@ -1127,6 +1144,7 @@
             btn.innerText = "INICIAR";
             btn.className = "btn-timer btn-start";
             document.getElementById('log-list').innerHTML = '<p id="log-empty-msg" style="text-align:center; color:var(--secondary); font-style:italic; font-size:0.85rem; margin-top:20px;">Inicia el cronómetro y pulsa las intervenciones para registrarlas.</p>';
+            clearAdrenalineReminder();
             
             if (isMetronomePlaying) {
                 clearInterval(metronomeInterval);
@@ -1166,6 +1184,66 @@
         item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
         list.insertBefore(item, list.firstChild);
+
+        if (esAdministracionAdrenalina(actionName)) {
+            scheduleAdrenalineReminder();
+        }
+    }
+
+    function esAdministracionAdrenalina(actionName) {
+        const texto = actionName.toLowerCase();
+        return texto.includes('adrenalina');
+    }
+
+    function scheduleAdrenalineReminder() {
+        adrenalineDueAt = timerSeconds + 180;
+        hideAdrenalineAlert();
+        stopAdrenalineAlarm();
+    }
+
+    function clearAdrenalineReminder() {
+        adrenalineDueAt = null;
+        hideAdrenalineAlert();
+        stopAdrenalineAlarm();
+    }
+
+    function checkAdrenalineReminder() {
+        if (adrenalineDueAt !== null && timerSeconds >= adrenalineDueAt && !adrenalineAlertActive) {
+            triggerAdrenalineAlert();
+        }
+    }
+
+    function triggerAdrenalineAlert() {
+        adrenalineAlertActive = true;
+        const alertBox = document.getElementById('adrenaline-alert');
+        if (alertBox) alertBox.classList.add('active');
+        startAdrenalineAlarm();
+    }
+
+    function hideAdrenalineAlert() {
+        adrenalineAlertActive = false;
+        const alertBox = document.getElementById('adrenaline-alert');
+        if (alertBox) alertBox.classList.remove('active');
+    }
+
+    function startAdrenalineAlarm() {
+        stopAdrenalineAlarm();
+        adrenalineAlarmBeeps = 0;
+        playBeep();
+        adrenalineAlarmBeeps++;
+        adrenalineAlarmInterval = setInterval(() => {
+            playBeep();
+            adrenalineAlarmBeeps++;
+            if (adrenalineAlarmBeeps >= 6) stopAdrenalineAlarm();
+        }, 600);
+    }
+
+    function stopAdrenalineAlarm() {
+        if (adrenalineAlarmInterval) {
+            clearInterval(adrenalineAlarmInterval);
+            adrenalineAlarmInterval = null;
+        }
+        adrenalineAlarmBeeps = 0;
     }
 
     function playBeep() {
